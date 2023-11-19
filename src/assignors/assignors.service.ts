@@ -1,26 +1,76 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateAssignorDto } from './dto/create-assignor.dto';
+import { PrismaService } from '../database/prisma.service';
 import { UpdateAssignorDto } from './dto/update-assignor.dto';
 
 @Injectable()
 export class AssignorsService {
-  create(createAssignorDto: CreateAssignorDto) {
-    return 'This action adds a new assignor';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(data: CreateAssignorDto) {
+    await this.checkIfEmailExists(data.email);
+    return this.prisma.assignor.create({ data });
   }
 
-  findAll() {
-    return `This action returns all assignors`;
+  async findAll() {
+    return this.prisma.assignor.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} assignor`;
+  async findOne(id: string) {
+    await this.exists(id);
+    return this.prisma.assignor.findUnique({
+      where: { id },
+    });
+  }
+  async update(id: string, data: UpdateAssignorDto) {
+    const assignor = await this.prisma.assignor.findUnique({ where: { id } });
+    if (!assignor) {
+      throw new NotFoundException('Cedente não encontrado');
+    }
+    if (data.email && data.email !== assignor.email) {
+      await this.checkIfEmailExists(data.email);
+    }
+
+    try {
+      return this.prisma.assignor.update({ where: { id }, data });
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
   }
 
-  update(id: number, updateAssignorDto: UpdateAssignorDto) {
-    return `This action updates a #${id} assignor`;
+  async remove(id: string) {
+    if (!this.exists(id)) {
+      throw new NotFoundException('Cedente não encontrado');
+    }
+    return this.prisma.assignor.delete({
+      where: { id },
+    });
   }
+  async exists(id: string) {
+    if (
+      !(await this.prisma.assignor.count({
+        where: {
+          id,
+        },
+      }))
+    ) {
+      throw new NotFoundException(`Cedente não encontrado.`);
+    }
+  }
+  private async checkIfEmailExists(email: string) {
+    const existingAssignor = await this.prisma.assignor.findFirst({
+      where: {
+        email,
+      },
+    });
 
-  remove(id: number) {
-    return `This action removes a #${id} assignor`;
+    if (existingAssignor) {
+      throw new ConflictException(`Email já cadastrado.`);
+    }
   }
 }

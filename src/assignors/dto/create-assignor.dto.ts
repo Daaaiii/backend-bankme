@@ -5,33 +5,35 @@ import {
   IsNumberString,
   IsString,
   MaxLength,
+  MinLength,
 } from 'class-validator';
+import { IsCpfOrCnpjValid } from '../../utils/validateCPForCNPJ';
 
 export class CreateAssignorDto {
   @ApiProperty()
-  @IsNotEmpty({ message: 'Todos os campos precisam ser preenchidos.' })
+  @IsNotEmpty()
   @MaxLength(30)
-  @IsString()
   @IsNumberString()
+  @IsCpfOrCnpjValid()
   document: string;
 
   @ApiProperty()
-  @IsNotEmpty({ message: 'Todos os campos precisam ser preenchidos.' })
-  @IsEmail({}, { message: 'Deve se informar o email' })
-  @IsString()
+  @IsNotEmpty()
+  @IsEmail()
   @MaxLength(140)
   email: string;
 
   @ApiProperty()
-  @IsNotEmpty({ message: 'Todos os campos precisam ser preenchidos.' })
-  @IsString()
+  @IsNotEmpty()
   @MaxLength(20)
+  @MinLength(11)
   @IsNumberString()
   phone: string;
 
   @ApiProperty()
-  @IsNotEmpty({ message: 'Todos os campos precisam ser preenchidos.' })
+  @IsNotEmpty()
   @IsString()
   @MaxLength(140)
+  @MinLength(3)
   name: string;
 }
