@@ -10,24 +10,28 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+model User {
+  id       String @id @default(uuid())
+  login    String @unique
+  password String
+}
+
+model Payable {
+  id           String   @id @default(uuid())
+  value        Float
+  emissionDate DateTime @default(now())
+  assignorId   String
+  assignor     Assignor @relation(fields: [assignorId], references: [id])
+  updatedAt    DateTime @default(now())
+}
+
 model Assignor {
-  document  String    @id
-  email     String    @unique
+  id        String    @id @default(uuid())
+  document  String
+  email     String   
   phone     String
   name      String
   payables  Payable[]
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now())
-
-}
-
-model Payable {
-  id           String   @id
-  value        Float
-  emissionDate DateTime
-  assignors    Assignor @relation(fields: [assignor], references: [document])
-  assignor     String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now())
-
+  updatedAt DateTime   @updatedAt
 }
