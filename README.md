@@ -9,6 +9,7 @@
 API construida utilizando Nestjs e SQlite com authenticação JWT. O projeto visa permitir ao usuário realizar as operações de CRUD para o Cedente e os Pagáveis de uma instituição financeira baseados nas permissões que o usuário tem no sistema.
 
 Sobre a segurança do aplicativo, adicionei o `@nestjs/throttler` para impedir ataques de força bruta na API. E também a senha de login usuário deve conter no mínimo 8 characteres, incluindo um símbolo, uma letra maíscula e um número pelo menos.
+Além disso, os registros das senhas estão criptografadas.
 
 Eu adicionei um Guard para a possibilidade de diferenciação de autorização dos usuários entre `admin` e `user` permitindo que os usuários tenham acesso limitado a determinandas funções dentro do app. 
 
