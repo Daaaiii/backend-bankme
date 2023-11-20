@@ -7,20 +7,22 @@ import {
   Param,
   Delete,
   UseGuards,
-  ParseIntPipe,
-  Query,
 } from '@nestjs/common';
 import { PayableService } from './payable.service';
 import { CreatePayableDto } from './dto/create-payable.dto';
 import { UpdatePayableDto } from './dto/update-payable.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../guards/auth.guard';
+import { BatchProducerService } from './jobs/batch-producer.service';
 
 @ApiTags('integrations/payable')
 @UseGuards(AuthGuard)
 @Controller('integrations/payable')
 export class PayableController {
-  constructor(private readonly payableService: PayableService) {}
+  constructor(
+    private readonly payableService: PayableService,
+    private batchProducerService: BatchProducerService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Cria os Pagáveis' })
@@ -34,11 +36,8 @@ export class PayableController {
   @Get()
   @ApiOperation({ summary: 'Lista todos os Pagáveis' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findAll(
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
-  ) {
-    return this.payableService.findAll(page, pageSize);
+  findAll() {
+    return this.payableService.findAll();
   }
 
   @Get(':id')
@@ -64,5 +63,15 @@ export class PayableController {
   @ApiResponse({ status: 404, description: 'Not Found.' })
   remove(@Param('id') id: string) {
     return this.payableService.remove(id);
+  }
+
+  @Post('batch')
+  @ApiOperation({ summary: 'Cria vários pagáveis' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  batch(@Body() payableData: CreatePayableDto[]) {
+    for (const payable of payableData) {
+      this.batchProducerService.createPayable(payable);
+    }
+    return 'Processando';
   }
 }

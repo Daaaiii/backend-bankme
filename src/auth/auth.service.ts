@@ -24,7 +24,7 @@ export class AuthService {
           login: user.login,
         },
         {
-          expiresIn: '1 minute',
+          expiresIn: '2 hours',
           subject: String(user.id),
         },
       ),
