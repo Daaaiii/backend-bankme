@@ -13,8 +13,8 @@ import { APP_GUARD } from '@nestjs/core';
     ConfigModule.forRoot(),
     ThrottlerModule.forRoot([
       {
-        ttl: 60,
-        limit: 3,
+        ttl: 60000,
+        limit: 10,
       },
     ]),
     forwardRef(() => AuthModule),
