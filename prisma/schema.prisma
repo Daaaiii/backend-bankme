@@ -22,7 +22,7 @@ model Payable {
   emissionDate DateTime @default(now())
   assignorId   String
   assignor     Assignor @relation(fields: [assignorId], references: [id])
-  updatedAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Assignor {
