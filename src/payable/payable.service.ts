@@ -11,13 +11,16 @@ export class PayableService {
     return await this.prisma.payable.create({ data });
   }
 
-  async findAll() {
+  async findAll(page: number = 1, pageSize: number = 10) {
+    const skip = (page - 1) * pageSize;
     return await this.prisma.payable.findMany({
       select: {
         id: true,
         value: true,
         emissionDate: true,
       },
+      take: pageSize,
+      skip,
     });
   }
 

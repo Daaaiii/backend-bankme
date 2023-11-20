@@ -7,6 +7,7 @@ import {
 import { CreateAssignorDto } from './dto/create-assignor.dto';
 import { PrismaService } from '../database/prisma.service';
 import { UpdateAssignorDto } from './dto/update-assignor.dto';
+import { Assignor } from '@prisma/client';
 
 @Injectable()
 export class AssignorsService {
@@ -17,8 +18,12 @@ export class AssignorsService {
     return this.prisma.assignor.create({ data });
   }
 
-  async findAll() {
-    return this.prisma.assignor.findMany();
+  async findAll(page: number = 1, pageSize: number = 10): Promise<Assignor[]> {
+    const skip = (page - 1) * pageSize;
+    return this.prisma.assignor.findMany({
+      take: pageSize,
+      skip,
+    });
   }
 
   async findOne(id: string) {

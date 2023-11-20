@@ -7,12 +7,15 @@ import {
   Delete,
   Patch,
   UseGuards,
+  ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { AssignorsService } from './assignors.service';
 import { CreateAssignorDto } from './dto/create-assignor.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UpdateAssignorDto } from './dto/update-assignor.dto';
 import { AuthGuard } from '../guards/auth.guard';
+import { Assignor } from '@prisma/client';
 
 @ApiTags('integrations/assignor')
 @Controller('integrations/assignor')
@@ -32,8 +35,11 @@ export class AssignorsController {
   @Get()
   @ApiOperation({ summary: 'Lista os Cedente' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findAll() {
-    return this.assignorsService.findAll();
+  async findAll(
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+  ): Promise<Assignor[]> {
+    return this.assignorsService.findAll(page, pageSize);
   }
 
   @Get(':id')

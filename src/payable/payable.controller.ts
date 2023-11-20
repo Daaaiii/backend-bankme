@@ -7,6 +7,8 @@ import {
   Param,
   Delete,
   UseGuards,
+  ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { PayableService } from './payable.service';
 import { CreatePayableDto } from './dto/create-payable.dto';
@@ -32,8 +34,11 @@ export class PayableController {
   @Get()
   @ApiOperation({ summary: 'Lista todos os Pagáveis' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  findAll() {
-    return this.payableService.findAll();
+  async findAll(
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('pageSize', ParseIntPipe) pageSize: number = 10,
+  ) {
+    return this.payableService.findAll(page, pageSize);
   }
 
   @Get(':id')
