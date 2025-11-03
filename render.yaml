@@ -21,7 +21,7 @@ services:
           name: bankme-db
           property: connectionString
       
-      - key: JWT_SECRET
+      - key: JWT_PASS
         generateValue: true
         sync: false
       
