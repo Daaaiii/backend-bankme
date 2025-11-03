@@ -1,22 +1,72 @@
-# 🐳 Docker Deployment Guide
+# 🐳 Deploy no Render com Docker
 
-Este guia explica como usar Docker para executar e fazer deploy do backend BankMe.
+Este guia explica como fazer deploy do backend BankMe no Render usando Docker.
 
 ## 📋 Pré-requisitos
 
-- Docker instalado
-- Docker Compose instalado (opcional, mas recomendado)
+- Conta no [Render](https://render.com) (gratuita)
+- Repositório no GitHub
+- Docker instalado (apenas para testes locais)
 
-## 🚀 Opções de Deploy
+## 🚀 Deploy no Render (Recomendado)
 
-### Opção 1: Docker Compose (Recomendado para desenvolvimento)
+### Método 1: Blueprint (Automático) ⭐
+
+Este é o método mais fácil! O arquivo `render.yaml` já está configurado.
+
+1. **Acesse o Render Dashboard**: https://dashboard.render.com
+2. **New → Blueprint**
+3. **Conecte seu repositório GitHub** (`Daaaiii/backend-bankme`)
+4. **O Render detectará o `render.yaml`** automaticamente
+5. **Clique em "Apply"**
+6. **Aguarde o deploy** (~3-5 minutos na primeira vez)
+
+O Render irá:
+- ✅ Criar um banco PostgreSQL gratuito
+- ✅ Buildar a imagem Docker usando `Dockerfile.prod`
+- ✅ Configurar as variáveis de ambiente automaticamente
+- ✅ Fazer deploy do backend
+- ✅ Configurar auto-deploy em cada push na branch `main`
+
+### Método 2: Manual
+
+1. **Vá para o Dashboard**: https://dashboard.render.com
+2. **New → Web Service**
+3. **Conecte seu repositório**
+4. Configure:
+   - **Environment**: Docker
+   - **Dockerfile Path**: `./Dockerfile.prod`
+   - **Region**: Oregon (ou Frankfurt para Europa)
+   - **Plan**: Free
+   
+5. **Adicione o banco de dados**:
+   - New → PostgreSQL
+   - Name: `bankme-db`
+   - Region: Oregon
+   - Plan: Free
+   
+6. **Configure variáveis de ambiente**:
+   - `NODE_ENV`: `production`
+   - `PORT`: `3000`
+   - `DATABASE_URL`: (Copie do banco PostgreSQL criado)
+   - `JWT_SECRET`: (Gere um secret seguro)
+   - `JWT_EXPIRATION`: `1d`
+
+7. **Clique em "Create Web Service"**
+
+## 🧪 Testar Localmente com Docker Compose
+
+Antes de fazer deploy, você pode testar localmente:
 
 ```bash
-# Executar aplicação + PostgreSQL
+# Subir backend + PostgreSQL
 docker-compose up -d
 
 # Ver logs
 docker-compose logs -f backend
+
+# Testar API
+curl http://localhost:3000/health
 
 # Parar
 docker-compose down
@@ -24,199 +74,181 @@ docker-compose down
 
 A aplicação estará disponível em: `http://localhost:3000`
 
-### Opção 2: Docker Build Local
+## 🔐 Variáveis de Ambiente
+
+Configure estas variáveis no Render:
+
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `NODE_ENV` | Ambiente | `production` |
+| `PORT` | Porta do servidor | `3000` |
+| `JWT_SECRET` | Secret para JWT | Gere um aleatório seguro |
+| `JWT_EXPIRATION` | Tempo de expiração do token | `1d` |
+
+### Gerar JWT_SECRET seguro:
 
 ```bash
-# Build da imagem
-docker build -t bankme-backend:latest -f Dockerfile.prod .
-
-# Executar (precisa de um PostgreSQL rodando)
-docker run -p 3000:3000 \
-  -e DATABASE_URL="postgresql://user:password@host:5432/database" \
-  bankme-backend:latest
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Opção 3: Usar imagem do GitHub Container Registry
+## 🏥 Health Check
+
+O backend possui um endpoint de health check:
+- **URL**: `/health`
+- **Método**: GET
+- **Resposta esperada**: 200 OK
+
+O Render usa este endpoint para verificar se o serviço está funcionando.
+
+## 📊 Monitoramento
+
+### Ver logs no Render:
+
+1. Acesse seu serviço no Dashboard
+2. Clique na aba "Logs"
+3. Logs em tempo real aparecerão aqui
+
+### Comandos úteis:
 
 ```bash
-# Pull da imagem
-docker pull ghcr.io/daaaiii/aprove-me/backend:latest
+# Ver logs locais
+docker-compose logs -f backend
 
-# Executar
-docker run -p 3000:3000 \
-  -e DATABASE_URL="postgresql://user:password@host:5432/database" \
-  ghcr.io/daaaiii/aprove-me/backend:latest
+# Entrar no container
+docker-compose exec backend sh
+
+# Rodar migrations manualmente
+docker-compose exec backend npx prisma migrate deploy
+
+# Ver status do banco
+docker-compose exec postgres psql -U bankme -d bankme_db -c "\dt"
 ```
 
 ## 🔄 CI/CD - GitHub Actions
 
 O workflow `.github/workflows/docker-build.yml` automaticamente:
 
-1. ✅ Builda a imagem Docker
-2. ✅ Publica no GitHub Container Registry (GHCR)
-3. ✅ Cria tags automáticas (latest, versão, SHA)
+1. ✅ Valida o build do Docker em cada push
+2. ✅ Testa se a aplicação compila
+3. ✅ Confirma que está pronta para deploy no Render
 
-### Como funciona:
-
-- **Push na main**: Cria tag `latest`
-- **Push de tag `v*`**: Cria versão (ex: `v1.0.0`)
-- **Pull Request**: Cria tag de teste
-
-### Acessar as imagens:
-
-🔗 https://github.com/Daaaiii/aprove-me/pkgs/container/aprove-me%2Fbackend
-
-## ☁️ Deploy em Plataformas Cloud
-
-### Fly.io (Recomendado)
-
-```bash
-# Instalar CLI
-curl -L https://fly.io/install.sh | sh
-
-# Login
-fly auth login
-
-# Criar app
-fly launch
-
-# Deploy
-fly deploy
-```
-
-O arquivo `fly.toml` já está configurado!
-
-### Render
-
-1. Vá em: https://render.com
-2. New → Web Service
-3. Deploy an existing image from a registry
-4. Use: `ghcr.io/daaaiii/aprove-me/backend:latest`
-5. Configure as variáveis de ambiente
-6. Deploy!
-
-### Railway
-
-```bash
-# Instalar CLI
-npm install -g @railway/cli
-
-# Login
-railway login
-
-# Iniciar projeto
-railway init
-
-# Deploy
-railway up
-```
-
-### Google Cloud Run
-
-```bash
-# Deploy direto da imagem
-gcloud run deploy bankme-backend \
-  --image ghcr.io/daaaiii/aprove-me/backend:latest \
-  --platform managed \
-  --region southamerica-east1 \
-  --allow-unauthenticated
-```
-
-## 🔐 Variáveis de Ambiente Necessárias
-
-Configure estas variáveis em seu ambiente de deploy:
-
-```env
-DATABASE_URL=postgresql://user:password@host:5432/database
-NODE_ENV=production
-PORT=3000
-JWT_SECRET=your-super-secret-key
-JWT_EXPIRATION=1d
-```
-
-## 🏥 Health Check
-
-O container possui um health check configurado em:
-- **Endpoint**: `/health`
-- **Intervalo**: 30s
-- **Timeout**: 3s
-
-## 📊 Monitoramento
-
-Para ver logs em produção:
-
-```bash
-# Docker Compose
-docker-compose logs -f backend
-
-# Docker
-docker logs -f <container-id>
-
-# Fly.io
-fly logs
-
-# Railway
-railway logs
-```
+O Render fará o deploy automático quando você:
+- Fizer push na branch `main`
+- Tiver configurado o Blueprint ou Auto-Deploy
 
 ## 🛠️ Troubleshooting
 
-### Container não inicia
+### Container não inicia no Render
+
+1. **Verifique os logs** no Dashboard
+2. **Confirme as variáveis de ambiente**:
+   - `DATABASE_URL` está correta?
+   - `JWT_SECRET` está configurado?
+3. **Verifique se o banco está pronto**:
+   - O banco PostgreSQL pode demorar 1-2 minutos para iniciar
+   - O backend aguarda o banco antes de conectar
+
+### Erro de conexão com banco
 
 ```bash
-# Verificar logs
-docker logs <container-id>
+# Teste a conexão localmente:
+docker-compose exec backend npx prisma db pull
 
-# Verificar se o banco está acessível
-docker exec -it <container-id> sh
-ping postgres
+# Verifique se o DATABASE_URL está correto
+docker-compose exec backend env | grep DATABASE_URL
 ```
 
-### Migrations não rodam
+### Migrations não aplicadas
+
+No Render, as migrations são aplicadas automaticamente no CMD do Dockerfile:
+```bash
+npx prisma migrate deploy && node dist/main
+```
+
+Se precisar rodar manualmente, use o Render Shell:
+1. Dashboard → seu serviço → Shell
+2. Execute: `npx prisma migrate deploy`
+
+### Erro "Port already in use"
+
+Localmente:
+```bash
+# Parar todos os containers
+docker-compose down
+
+# Verificar portas em uso
+netstat -ano | findstr :3000  # Windows
+lsof -i :3000                  # Linux/Mac
+```
+
+## 📦 Estrutura do Dockerfile
+
+O `Dockerfile.prod` usa **multi-stage build** para otimizar:
+
+1. **Stage 1 (builder)**: 
+   - Instala todas as dependências
+   - Gera Prisma Client
+   - Builda a aplicação
+
+2. **Stage 2 (production)**:
+   - Usa apenas dependências de produção
+   - Copia apenas os arquivos necessários
+   - Resultado: imagem menor e mais segura (~200-300MB)
+
+## 🎯 Recursos do Render (Free Tier)
+
+- ✅ **750 horas/mês** de runtime
+- ✅ **PostgreSQL** gratuito (90 dias, depois $7/mês)
+- ✅ **SSL/HTTPS** automático
+- ✅ **Auto-deploy** do GitHub
+- ✅ **Health checks** automáticos
+- ✅ **Logs** persistentes
+- ⚠️ O serviço **hiberna** após 15 min de inatividade (demora ~30s para acordar)
+
+## 🚀 Após o Deploy
+
+Seu backend estará disponível em:
+```
+https://bankme-backend.onrender.com
+```
+
+### Testar:
 
 ```bash
-# Executar migrations manualmente
-docker exec -it <container-id> npx prisma migrate deploy
+# Health check
+curl https://bankme-backend.onrender.com/health
+
+# Sua API
+curl https://bankme-backend.onrender.com/api/endpoint
 ```
 
-### Variáveis de ambiente
+### Conectar o Frontend:
 
-```bash
-# Verificar variáveis carregadas
-docker exec -it <container-id> env
+No seu frontend, atualize a URL da API:
+```typescript
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://bankme-backend.onrender.com';
 ```
 
-## 📦 Tamanho da Imagem
+## 📝 Notas Importantes
 
-A imagem de produção é otimizada:
-- Multi-stage build
-- Alpine Linux (menor)
-- Apenas dependências de produção
-- Tamanho estimado: ~200-300MB
-
-## 🔄 Atualizações
-
-Para atualizar para a última versão:
-
-```bash
-# Pull nova imagem
-docker pull ghcr.io/daaaiii/aprove-me/backend:latest
-
-# Recriar containers
-docker-compose up -d --force-recreate
-```
-
-## 📝 Notas
-
-- ⚠️ **Não use SQLite em produção** (não funciona bem em containers)
-- ✅ Use PostgreSQL ou MySQL
-- 🔒 Sempre configure JWT_SECRET em produção
-- 💾 Use volumes para dados persistentes
-- 🌐 Configure CORS adequadamente
+- 🐘 **PostgreSQL obrigatório** (não use SQLite em produção)
+- 🔒 **JWT_SECRET** deve ser forte e seguro
+- 🌐 **Configure CORS** adequadamente para seu frontend
+- ⏰ **Hibernação**: No free tier, pode demorar ~30s na primeira request
+- 💾 **Banco de dados**: Backup regular recomendado (não incluído no free tier)
 
 ## 🆘 Precisa de Ajuda?
 
-- 📖 [Docker Documentation](https://docs.docker.com)
-- 🚀 [Fly.io Docs](https://fly.io/docs)
-- 🎯 [Render Docs](https://render.com/docs)
-- 🛤️ [Railway Docs](https://docs.railway.app)
+- 📖 [Render Documentation](https://render.com/docs)
+- 💬 [Render Community](https://community.render.com)
+- � [Docker Documentation](https://docs.docker.com)
+- 🎯 [NestJS Deployment](https://docs.nestjs.com/recipes/prisma#deployment)
+
+## � Dicas de Performance
+
+1. **Otimize queries** do Prisma
+2. **Use cache** (Redis no Render é pago)
+3. **Monitore logs** regularmente
+4. **Configure rate limiting**
+5. **Upgrade para plano pago** se precisar de mais performance
