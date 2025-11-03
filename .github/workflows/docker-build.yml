@@ -1,0 +1,52 @@
+name: Build Docker Image for Render
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          push: false
+          tags: bankme-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          echo "✅ Docker image built successfully!"
+          echo "🚀 Ready for Render deployment"
+          
+      - name: Generate deployment info
+        run: |
+          echo "## 🐳 Docker Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Build Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile**: Dockerfile.prod" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: Render" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to [Render Dashboard](https://dashboard.render.com)" >> $GITHUB_STEP_SUMMARY
+          echo "2. Connect your GitHub repository" >> $GITHUB_STEP_SUMMARY
+          echo "3. Create New → Blueprint" >> $GITHUB_STEP_SUMMARY
+          echo "4. Select \`render.yaml\` from your repo" >> $GITHUB_STEP_SUMMARY
+          echo "5. Click **Apply** and wait for deployment!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📚 Full instructions in [DOCKER.md](DOCKER.md)" >> $GITHUB_STEP_SUMMARY

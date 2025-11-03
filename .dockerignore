@@ -1,3 +1,63 @@
+# Git
 .git
+.gitignore
+.github
+
+# IDE
 .vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Dependencies
 node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.test
+.env.production
+
+# Build
+dist
+build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+test
+
+# Documentation
+README.md
+*.md
+docs
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Prisma
+prisma/dev.db
+prisma/*.db
+prisma/*.db-journal
+
+# Logs
+logs
+*.log
+
+# Misc
+.prettierrc
+.eslintrc.js
+tsconfig.build.json
+nest-cli.json

@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: bankme-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bankme
+      POSTGRES_PASSWORD: bankme_password
+      POSTGRES_DB: bankme_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bankme"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: bankme-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://bankme:bankme_password@postgres:5432/bankme_db
+      NODE_ENV: production
+      PORT: 3000
+      # Adicione outras variáveis de ambiente necessárias aqui
+      # JWT_SECRET: your_secret_here
+      # JWT_EXPIRATION: 1d
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local
